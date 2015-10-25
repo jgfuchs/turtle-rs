@@ -1,0 +1,9 @@
+[package]
+name = "turtle-rs"
+version = "0.1.0"
+authors = ["Julian Fuchs <jfuchs@mit.edu>"]
+
+[dependencies]
+sdl2 = "0.9"
+rand = "0.3"
+
