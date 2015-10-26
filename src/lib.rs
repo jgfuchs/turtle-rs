@@ -77,20 +77,21 @@ impl Turtle {
             .unwrap();
 
         let mut renderer = window.renderer().build().unwrap();
+        renderer.set_draw_color(Color::RGB(0, 0, 0));
         renderer.clear();
         renderer.set_draw_color(Color::RGB(255, 255, 255));
 
-        let mut playing = true;
-        let mut complete = false;
+        let mut paused = false;
+        let mut step = false;
         let mut op_iter = self.ops.iter();
+        let mut delay = delay;
         let mut x = 0i32;
         let mut y = 0i32;
 
-        let mut running = true;
         let mut event_pump = sdl_context.event_pump().unwrap();
-
-        while running {
-            if !complete && playing {
+        loop {
+            if !paused || step {
+                step = false;
                 if let Some(op) = op_iter.next() {
                     match *op {
                         TurtleOps::MoveTo(tx, ty) => {
@@ -109,20 +110,40 @@ impl Turtle {
 
                     renderer.present();
                 } else {
-                    complete = true;
+                    paused = true;
                 }
             }
 
             for event in event_pump.poll_iter() {
                 match event {
                     Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                        running = false
+                        return;
                     },
-                    Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
-                        playing = !playing;
+                    Event::KeyDown { keycode: Some(keycode), .. } => {
+                        match keycode {
+                            Keycode::Space => { paused = !paused; },
+                            Keycode::R => {
+                                paused = false;
+                                op_iter = self.ops.iter();
+                                renderer.set_draw_color(Color::RGB(0, 0, 0));
+                                renderer.clear();
+                                renderer.set_draw_color(Color::RGB(255, 255, 255));
+                            },
+                            Keycode::S => {
+                                step = true;
+                            },
+                            Keycode::LeftBracket => {
+                                delay += 1;
+                            },
+                            Keycode::RightBracket => {
+                                if delay > 0 {
+                                    delay -= 1;
+                                }
+                            }
+                            _ => {}
+                        }
                     }
                     _ => {}
-
                 }
             }
 
