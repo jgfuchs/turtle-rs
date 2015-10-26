@@ -12,7 +12,7 @@ fn main() {
         state = l_system_step(state, &rules);
     }
 
-    let mut t = Turtle::new(600, 600);
+    let mut t = Turtle::new();
     t.move_to(40, 500);
     t.set_color(255, 255, 255);
     for c in state.chars() {
@@ -23,7 +23,7 @@ fn main() {
             _ => {}
         }
     }
-    t.draw_sdl(5);
+    t.draw_sdl(3, (600, 600));
 }
 
 fn l_system_step(state: String, rules: &HashMap<char, &str>) -> String {

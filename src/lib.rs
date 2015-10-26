@@ -20,23 +20,18 @@ pub struct Turtle {
     x: f32,
     y: f32,
     h: f32,
-    wdim: (u32, u32),
     color: (u8, u8, u8),
     ops: Vec<TurtleOps>,
 }
 
 impl Turtle {
-    pub fn new(width: u32, height: u32) -> Turtle {
-        let cx = width as f32 / 2.0;
-        let cy = height as f32 / 2.0;
-
+    pub fn new() -> Turtle {
         Turtle {
-            x: cx as f32,
-            y: cy,
+            x: 0.0,
+            y: 0.0,
             h: 0.0,
-            wdim: (width, height),
             color: (255, 255, 255),
-            ops: vec![TurtleOps::MoveTo(cx, cy)],
+            ops: vec![TurtleOps::MoveTo(0.0, 0.0)],
         }
     }
 
@@ -73,18 +68,16 @@ impl Turtle {
         self.color
     }
 
-    pub fn draw_sdl(&self, delay: u32) {
+    pub fn draw_sdl(&self, delay: u32, wdim: (u32, u32)) {
         let sdl_context = sdl2::init().unwrap();
         let video_subsystem = sdl_context.video().unwrap();
-        let window = video_subsystem.window("rs-turtle", self.wdim.0, self.wdim.1)
+        let window = video_subsystem.window("rs-turtle", wdim.0, wdim.1)
             .position_centered()
             .build()
             .unwrap();
 
         let mut renderer = window.renderer().build().unwrap();
-        renderer.set_draw_color(Color::RGB(0, 0, 0));
         renderer.clear();
-        renderer.present();
         renderer.set_draw_color(Color::RGB(255, 255, 255));
 
         let mut playing = true;
