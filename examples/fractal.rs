@@ -1,7 +1,7 @@
 extern crate turtle;
 
 use std::collections::HashMap;
-use turtle::{Turtle, turtle_draw_sdl};
+use turtle::Turtle;
 
 fn main() {
     let mut rules = HashMap::new();
@@ -23,7 +23,7 @@ fn main() {
             _ => {}
         }
     }
-    turtle_draw_sdl(&t);
+    t.draw_sdl(5);
 }
 
 fn l_system_step(state: String, rules: &HashMap<char, &str>) -> String {

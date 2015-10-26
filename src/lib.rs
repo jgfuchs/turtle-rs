@@ -72,70 +72,68 @@ impl Turtle {
     pub fn get_color(&self) -> (u8, u8, u8) {
         self.color
     }
-}
 
-pub fn turtle_draw_sdl(turtle: &Turtle) {
-    let sdl_context = sdl2::init().unwrap();
-    let video_subsystem = sdl_context.video().unwrap();
-    let window = video_subsystem.window("rs-turtle", turtle.wdim.0, turtle.wdim.1)
-        .position_centered()
-        .build()
-        .unwrap();
+    pub fn draw_sdl(&self, delay: u32) {
+        let sdl_context = sdl2::init().unwrap();
+        let video_subsystem = sdl_context.video().unwrap();
+        let window = video_subsystem.window("rs-turtle", self.wdim.0, self.wdim.1)
+            .position_centered()
+            .build()
+            .unwrap();
 
-    let mut renderer = window.renderer().build().unwrap();
-    renderer.set_draw_color(Color::RGB(0, 0, 0));
-    renderer.clear();
-    renderer.present();
-    renderer.set_draw_color(Color::RGB(255, 255, 255));
+        let mut renderer = window.renderer().build().unwrap();
+        renderer.set_draw_color(Color::RGB(0, 0, 0));
+        renderer.clear();
+        renderer.present();
+        renderer.set_draw_color(Color::RGB(255, 255, 255));
 
-    let mut playing = true;
-    let mut complete = false;
-    let mut op_iter = turtle.ops.iter();
-    let mut x = 0i32;
-    let mut y = 0i32;
+        let mut playing = true;
+        let mut complete = false;
+        let mut op_iter = self.ops.iter();
+        let mut x = 0i32;
+        let mut y = 0i32;
 
-    let mut running = true;
-    let mut event_pump = sdl_context.event_pump().unwrap();
+        let mut running = true;
+        let mut event_pump = sdl_context.event_pump().unwrap();
 
-    let delay = 20_000 / turtle.ops.len() as u32;
-    println!("{}", delay);
+        while running {
+            if !complete && playing {
+                if let Some(op) = op_iter.next() {
+                    match *op {
+                        TurtleOps::MoveTo(tx, ty) => {
+                            x = tx as i32;
+                            y = ty as i32;
+                        },
+                        TurtleOps::LineTo(tx, ty) => {
+                            renderer.draw_line(Point::new(x, y), Point::new(tx as i32, ty as i32));
+                            x = tx as i32;
+                            y = ty as i32;
+                        }
+                        TurtleOps::SetColor(r, g, b) => {
+                            renderer.set_draw_color(Color::RGB(r, g, b));
+                        }
+                    }
 
-    while running {
-        if !complete && playing {
-            if let Some(op) = op_iter.next() {
-                match *op {
-                    TurtleOps::MoveTo(tx, ty) => {
-                        x = tx as i32;
-                        y = ty as i32;
+                    renderer.present();
+                } else {
+                    complete = true;
+                }
+            }
+
+            for event in event_pump.poll_iter() {
+                match event {
+                    Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                        running = false
                     },
-                    TurtleOps::LineTo(tx, ty) => {
-                        renderer.draw_line(Point::new(x, y), Point::new(tx as i32, ty as i32));
-                        x = tx as i32;
-                        y = ty as i32;
+                    Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
+                        playing = !playing;
                     }
-                    TurtleOps::SetColor(r, g, b) => {
-                        renderer.set_draw_color(Color::RGB(r, g, b));
-                    }
+                    _ => {}
+
                 }
-
-                renderer.present();
-            } else {
-                complete = true;
             }
-        }
 
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                    running = false
-                },
-                Event::KeyDown { keycode: Some(Keycode::Space), .. } => {
-                    playing = !playing;
-                }
-                _ => {}
-
-            }
+            std::thread::sleep_ms(delay);
         }
-        std::thread::sleep_ms(delay);
     }
 }
