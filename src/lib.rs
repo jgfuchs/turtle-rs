@@ -74,9 +74,9 @@ impl Turtle {
         let sdl_context = sdl2::init().unwrap();
         let video_subsystem = sdl_context.video().unwrap();
         let window = video_subsystem.window("rs-turtle", wdim.0, wdim.1)
-            .position_centered()
-            .build()
-            .unwrap();
+                                    .position_centered()
+                                    .build()
+                                    .unwrap();
 
         let mut renderer = window.renderer().build().unwrap();
         renderer.set_draw_color(Color::RGB(0, 0, 0));
@@ -97,10 +97,8 @@ impl Turtle {
                         renderer.set_draw_color(Color::RGB(r, g, b));
                     }
 
-                    renderer.draw_line(
-                        Point::new(line.start.0, line.start.1),
-                        Point::new(line.end.0, line.end.1)
-                    );
+                    renderer.draw_line(Point::new(line.start.0, line.start.1),
+                                       Point::new(line.end.0, line.end.1));
 
                     renderer.present();
                 } else {
@@ -112,23 +110,25 @@ impl Turtle {
                 match event {
                     Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                         return;
-                    },
+                    }
                     Event::KeyDown { keycode: Some(keycode), .. } => {
                         match keycode {
-                            Keycode::Space => { paused = !paused; },
+                            Keycode::Space => {
+                                paused = !paused;
+                            }
                             Keycode::R => {
                                 paused = false;
                                 line_iter = self.lines();
                                 renderer.set_draw_color(Color::RGB(0, 0, 0));
                                 renderer.clear();
                                 renderer.set_draw_color(Color::RGB(255, 255, 255));
-                            },
+                            }
                             Keycode::S => {
                                 step = true;
-                            },
+                            }
                             Keycode::LeftBracket => {
                                 delay += 1;
-                            },
+                            }
                             Keycode::RightBracket => {
                                 if delay > 0 {
                                     delay -= 1;
@@ -150,7 +150,7 @@ pub struct Lines<'a> {
     i: std::slice::Iter<'a, TurtleOp>,
     x: i32,
     y: i32,
-    color: (u8, u8, u8)
+    color: (u8, u8, u8),
 }
 
 pub struct Line {
@@ -169,7 +169,7 @@ impl<'a> Iterator for Lines<'a> {
                 Some(&TurtleOp::MoveTo(tx, ty)) => {
                     self.x = tx as i32;
                     self.y = ty as i32;
-                },
+                }
                 Some(&TurtleOp::LineTo(tx, ty)) => {
                     let lastx = self.x;
                     let lasty = self.y;
@@ -180,14 +180,18 @@ impl<'a> Iterator for Lines<'a> {
                     return Some(Line {
                         start: (lastx, lasty),
                         end: (self.x, self.y),
-                        color: if colorchanged { Some(self.color) } else { None },
+                        color: if colorchanged {
+                            Some(self.color)
+                        } else {
+                            None
+                        },
                     });
                 }
                 Some(&TurtleOp::SetColor(r, g, b)) => {
                     self.color = (r, g, b);
                     colorchanged = true;
-                },
-                None => return None
+                }
+                None => return None,
             }
         }
     }

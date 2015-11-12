@@ -17,10 +17,10 @@ fn main() {
     t.set_color(255, 255, 255);
     for c in state.chars() {
         match c {
-            'A' | 'B' => { t.forward(2); },
-            '+' => { t.turn(-60.0); },
-            '-' => { t.turn(60.0); },
-            _ => {}
+            'A' | 'B' => t.forward(2),
+            '+' => t.turn(-60.0),
+            '-' => t.turn(60.0),
+            _ => {},
         }
     }
     t.draw_sdl(3, (600, 600));

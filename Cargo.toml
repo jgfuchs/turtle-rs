@@ -9,4 +9,3 @@ path = "src/lib.rs"
 
 [dependencies]
 sdl2 = "0.10.0"
-
