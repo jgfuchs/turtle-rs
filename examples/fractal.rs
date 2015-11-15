@@ -20,7 +20,7 @@ fn main() {
             'A' | 'B' => t.forward(2),
             '+' => t.turn(-60.0),
             '-' => t.turn(60.0),
-            _ => {},
+            _ => {}
         }
     }
     t.draw_sdl().title("turtle-rs : Sierpinski").size(600, 600).show();

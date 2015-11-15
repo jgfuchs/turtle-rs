@@ -121,7 +121,7 @@ impl<'a> Iterator for Lines<'a> {
                     colorchanged = true;
                 }
                 None => {
-                    return None
+                    return None;
                 }
             }
         }
@@ -147,7 +147,7 @@ impl<'a> SdlTurtle<'a> {
         }
     }
 
-    pub fn title(&'a mut self, new_title: &str) -> &mut SdlTurtle  {
+    pub fn title(&'a mut self, new_title: &str) -> &mut SdlTurtle {
         self.title = new_title.to_string();
         self
     }
@@ -171,9 +171,9 @@ impl<'a> SdlTurtle<'a> {
         let sdl_context = sdl2::init().unwrap();
         let video_subsystem = sdl_context.video().unwrap();
         let window = video_subsystem.window(&self.title, self.dims.0, self.dims.1)
-                                   .position_centered()
-                                   .build()
-                                   .unwrap();
+                                    .position_centered()
+                                    .build()
+                                    .unwrap();
 
         let mut renderer = window.renderer().build().unwrap();
         renderer.set_draw_color(Color::RGB(0, 0, 0));
@@ -188,62 +188,62 @@ impl<'a> SdlTurtle<'a> {
         let mut event_pump = sdl_context.event_pump().unwrap();
 
         loop {
-           if !paused || step {
-               step = false;
-               if let Some(line) = line_iter.next() {
-                   if let Some((r, g, b)) = line.color {
-                       renderer.set_draw_color(Color::RGB(r, g, b));
-                   }
+            if !paused || step {
+                step = false;
+                if let Some(line) = line_iter.next() {
+                    if let Some((r, g, b)) = line.color {
+                        renderer.set_draw_color(Color::RGB(r, g, b));
+                    }
 
-                   renderer.draw_line(Point::new(line.start.0, line.start.1),
-                                      Point::new(line.end.0, line.end.1));
+                    renderer.draw_line(Point::new(line.start.0, line.start.1),
+                                       Point::new(line.end.0, line.end.1));
 
-                   renderer.present();
-               } else {
-                   paused = true;
-               }
-           }
+                    renderer.present();
+                } else {
+                    paused = true;
+                }
+            }
 
-           for event in event_pump.poll_iter() {
-               match event {
-                   Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                       return;
-                   }
-                   Event::KeyDown { keycode: Some(keycode), .. } => {
-                       if !self.interactive {
-                           continue;
-                       }
+            for event in event_pump.poll_iter() {
+                match event {
+                    Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                        return;
+                    }
+                    Event::KeyDown { keycode: Some(keycode), .. } => {
+                        if !self.interactive {
+                            continue;
+                        }
 
-                       match keycode {
-                           Keycode::Space => {
-                               paused = !paused;
-                           }
-                           Keycode::R => {
-                               paused = false;
-                               line_iter = self.turtle.lines();
-                               renderer.set_draw_color(Color::RGB(0, 0, 0));
-                               renderer.clear();
-                               renderer.set_draw_color(Color::RGB(255, 255, 255));
-                           }
-                           Keycode::S => {
-                               step = true;
-                           }
-                           Keycode::LeftBracket => {
-                               delay += 1;
-                           }
-                           Keycode::RightBracket => {
-                               if delay > 0 {
-                                   delay -= 1;
-                               }
-                           }
-                           _ => {}
-                       }
-                   }
-                   _ => {}
-               }
-           }
+                        match keycode {
+                            Keycode::Space => {
+                                paused = !paused;
+                            }
+                            Keycode::R => {
+                                paused = false;
+                                line_iter = self.turtle.lines();
+                                renderer.set_draw_color(Color::RGB(0, 0, 0));
+                                renderer.clear();
+                                renderer.set_draw_color(Color::RGB(255, 255, 255));
+                            }
+                            Keycode::S => {
+                                step = true;
+                            }
+                            Keycode::LeftBracket => {
+                                delay += 1;
+                            }
+                            Keycode::RightBracket => {
+                                if delay > 0 {
+                                    delay -= 1;
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+            }
 
-           std::thread::sleep_ms(delay);
+            std::thread::sleep_ms(delay);
         }
     }
 }
