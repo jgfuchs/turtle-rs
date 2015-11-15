@@ -23,7 +23,7 @@ fn main() {
             _ => {},
         }
     }
-    t.draw_sdl(3, (600, 600));
+    t.draw_sdl().title("turtle-rs : Sierpinski").size(600, 600).show();
 }
 
 fn l_system_step(state: String, rules: &HashMap<char, &str>) -> String {

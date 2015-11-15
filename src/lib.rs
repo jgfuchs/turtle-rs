@@ -29,7 +29,7 @@ impl Turtle {
             x: 0.0,
             y: 0.0,
             h: 0.0,
-            ops: vec![TurtleOp::SetColor(255, 255, 255), TurtleOp::MoveTo(0.0, 0.0)],
+            ops: Vec::new(),
         }
     }
 
@@ -66,83 +66,12 @@ impl Turtle {
             i: self.ops.iter(),
             x: 0,
             y: 0,
-            color: (0, 0, 0),
+            color: (255, 255, 255),
         }
     }
 
-    pub fn draw_sdl(&self, delay: u32, wdim: (u32, u32)) {
-        let sdl_context = sdl2::init().unwrap();
-        let video_subsystem = sdl_context.video().unwrap();
-        let window = video_subsystem.window("rs-turtle", wdim.0, wdim.1)
-                                    .position_centered()
-                                    .build()
-                                    .unwrap();
-
-        let mut renderer = window.renderer().build().unwrap();
-        renderer.set_draw_color(Color::RGB(0, 0, 0));
-        renderer.clear();
-        renderer.set_draw_color(Color::RGB(255, 255, 255));
-
-        let mut paused = false;
-        let mut step = false;
-        let mut line_iter = self.lines();
-        let mut delay = delay;
-
-        let mut event_pump = sdl_context.event_pump().unwrap();
-        loop {
-            if !paused || step {
-                step = false;
-                if let Some(line) = line_iter.next() {
-                    if let Some((r, g, b)) = line.color {
-                        renderer.set_draw_color(Color::RGB(r, g, b));
-                    }
-
-                    renderer.draw_line(Point::new(line.start.0, line.start.1),
-                                       Point::new(line.end.0, line.end.1));
-
-                    renderer.present();
-                } else {
-                    paused = true;
-                }
-            }
-
-            for event in event_pump.poll_iter() {
-                match event {
-                    Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                        return;
-                    }
-                    Event::KeyDown { keycode: Some(keycode), .. } => {
-                        match keycode {
-                            Keycode::Space => {
-                                paused = !paused;
-                            }
-                            Keycode::R => {
-                                paused = false;
-                                line_iter = self.lines();
-                                renderer.set_draw_color(Color::RGB(0, 0, 0));
-                                renderer.clear();
-                                renderer.set_draw_color(Color::RGB(255, 255, 255));
-                            }
-                            Keycode::S => {
-                                step = true;
-                            }
-                            Keycode::LeftBracket => {
-                                delay += 1;
-                            }
-                            Keycode::RightBracket => {
-                                if delay > 0 {
-                                    delay -= 1;
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                    _ => {}
-                }
-            }
-
-            std::thread::sleep_ms(delay);
-        }
+    pub fn draw_sdl(&self) -> SdlTurtle {
+        SdlTurtle::new(&self)
     }
 }
 
@@ -191,8 +120,130 @@ impl<'a> Iterator for Lines<'a> {
                     self.color = (r, g, b);
                     colorchanged = true;
                 }
-                None => return None,
+                None => {
+                    return None
+                }
             }
+        }
+    }
+}
+
+pub struct SdlTurtle<'a> {
+    title: String,
+    dims: (u32, u32),
+    interactive: bool,
+    speed: f32,
+    turtle: &'a Turtle,
+}
+
+impl<'a> SdlTurtle<'a> {
+    fn new(turtle: &Turtle) -> SdlTurtle {
+        SdlTurtle {
+            title: "turtle-rs".to_string(),
+            dims: (512, 512),
+            interactive: true,
+            speed: 60.0,
+            turtle: turtle,
+        }
+    }
+
+    pub fn title(&'a mut self, new_title: &str) -> &mut SdlTurtle  {
+        self.title = new_title.to_string();
+        self
+    }
+
+    pub fn size(&'a mut self, width: u32, height: u32) -> &mut SdlTurtle {
+        self.dims = (width, height);
+        self
+    }
+
+    pub fn interactive(&'a mut self, inter: bool) -> &mut SdlTurtle {
+        self.interactive = inter;
+        self
+    }
+
+    pub fn speed(&'a mut self, new_speed: f32) -> &mut SdlTurtle {
+        self.speed = new_speed;
+        self
+    }
+
+    pub fn show(&self) {
+        let sdl_context = sdl2::init().unwrap();
+        let video_subsystem = sdl_context.video().unwrap();
+        let window = video_subsystem.window(&self.title, self.dims.0, self.dims.1)
+                                   .position_centered()
+                                   .build()
+                                   .unwrap();
+
+        let mut renderer = window.renderer().build().unwrap();
+        renderer.set_draw_color(Color::RGB(0, 0, 0));
+        renderer.clear();
+        renderer.set_draw_color(Color::RGB(255, 255, 255));
+
+        let mut paused = false;
+        let mut step = false;
+        let mut line_iter = self.turtle.lines();
+        let mut delay = (1000.0 / self.speed) as u32;
+
+        let mut event_pump = sdl_context.event_pump().unwrap();
+
+        loop {
+           if !paused || step {
+               step = false;
+               if let Some(line) = line_iter.next() {
+                   if let Some((r, g, b)) = line.color {
+                       renderer.set_draw_color(Color::RGB(r, g, b));
+                   }
+
+                   renderer.draw_line(Point::new(line.start.0, line.start.1),
+                                      Point::new(line.end.0, line.end.1));
+
+                   renderer.present();
+               } else {
+                   paused = true;
+               }
+           }
+
+           for event in event_pump.poll_iter() {
+               match event {
+                   Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                       return;
+                   }
+                   Event::KeyDown { keycode: Some(keycode), .. } => {
+                       if !self.interactive {
+                           continue;
+                       }
+
+                       match keycode {
+                           Keycode::Space => {
+                               paused = !paused;
+                           }
+                           Keycode::R => {
+                               paused = false;
+                               line_iter = self.turtle.lines();
+                               renderer.set_draw_color(Color::RGB(0, 0, 0));
+                               renderer.clear();
+                               renderer.set_draw_color(Color::RGB(255, 255, 255));
+                           }
+                           Keycode::S => {
+                               step = true;
+                           }
+                           Keycode::LeftBracket => {
+                               delay += 1;
+                           }
+                           Keycode::RightBracket => {
+                               if delay > 0 {
+                                   delay -= 1;
+                               }
+                           }
+                           _ => {}
+                       }
+                   }
+                   _ => {}
+               }
+           }
+
+           std::thread::sleep_ms(delay);
         }
     }
 }
