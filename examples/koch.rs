@@ -17,8 +17,8 @@ fn koch(t: &mut Turtle, n: u32, d: f32) {
 }
 
 fn main() {
-    let n = 4;
-    let d = 512.0 / 1.2 / u32::pow(3, n) as f32;
+    let n = 3;
+    let d = 500.0 / 1.2 / u32::pow(3, n) as f32;
 
     let mut t = Turtle::new();
 
@@ -31,5 +31,6 @@ fn main() {
     t.turn(120.0);
     koch(&mut t, n, d);
 
-    t.draw_sdl().title("Koch snowflake").speed(50.0).show();
+    t.draw_png("snowflake.png", (500, 500));
+    t.draw_sdl().title("Koch snowflake").show();
 }

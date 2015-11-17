@@ -1,9 +1,12 @@
 extern crate sdl2;
+extern crate image;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Point;
+
+use image::{RgbImage, Rgb, Pixel};
 
 #[derive(Debug)]
 enum TurtleOp {
@@ -73,6 +76,56 @@ impl Turtle {
     pub fn draw_sdl(&self) -> SdlTurtle {
         SdlTurtle::new(&self)
     }
+
+    pub fn draw_png(&self, fname: &str, dims: (u32, u32)) {
+        let mut img = RgbImage::new(dims.0, dims.1);
+        for line in self.lines() {
+            draw_line_img(&mut img, line)
+        }
+        img.save(fname).unwrap();
+    }
+}
+
+fn draw_line_img(img: &mut RgbImage, line: Line) {
+    let w = img.width();
+    let h = img.height();
+    let inbounds = |x: i32, y: i32| x >= 0 && y >= 0 && x < w as i32 && y < h as i32;
+
+    let (x0, y0) = (line.start.0, line.start.1);
+    let (x1, y1) = (line.end.0, line.end.1);
+
+    let dx = i32::abs(x1 - x0);
+    let dy = -i32::abs(y1 - y0);
+    let sx = if x0 < x1 { 1 } else { -1 };
+    let sy = if y0 < y1 { 1 } else { -1 };
+    let mut err = dx + dy;
+
+    let px = Rgb::from_channels(line.color.0, line.color.1, line.color.2, 0);
+
+    let mut x = x0;
+    let mut y = y0;
+
+    loop {
+        if !inbounds(x, y) {
+            break;
+        }
+
+        img.put_pixel(x as u32, y as u32, px);
+
+        if x == x1 && y == y1 {
+            break;
+        }
+
+        let e2 = 2*err;
+        if e2 >= dy {
+            err += dy;
+            x += sx;
+        }
+        if e2 <= dx {
+            err += dx;
+            y += sy;
+        }
+    }
 }
 
 pub struct Lines<'a> {
@@ -85,7 +138,8 @@ pub struct Lines<'a> {
 pub struct Line {
     start: (i32, i32),
     end: (i32, i32),
-    color: Option<(u8, u8, u8)>,
+    color: (u8, u8, u8),
+    colorchanged: bool,
 }
 
 impl<'a> Iterator for Lines<'a> {
@@ -109,11 +163,8 @@ impl<'a> Iterator for Lines<'a> {
                     return Some(Line {
                         start: (lastx, lasty),
                         end: (self.x, self.y),
-                        color: if colorchanged {
-                            Some(self.color)
-                        } else {
-                            None
-                        },
+                        color: self.color,
+                        colorchanged: colorchanged,
                     });
                 }
                 Some(&TurtleOp::SetColor(r, g, b)) => {
@@ -140,7 +191,7 @@ impl<'a> SdlTurtle<'a> {
     fn new(turtle: &Turtle) -> SdlTurtle {
         SdlTurtle {
             title: "turtle-rs".to_string(),
-            dims: (512, 512),
+            dims: (500, 500),
             interactive: true,
             speed: 60.0,
             turtle: turtle,
@@ -191,8 +242,10 @@ impl<'a> SdlTurtle<'a> {
             if !paused || step {
                 step = false;
                 if let Some(line) = line_iter.next() {
-                    if let Some((r, g, b)) = line.color {
-                        renderer.set_draw_color(Color::RGB(r, g, b));
+                    if line.colorchanged {
+                        renderer.set_draw_color(Color::RGB(line.color.0,
+                                                           line.color.1,
+                                                           line.color.2));
                     }
 
                     renderer.draw_line(Point::new(line.start.0, line.start.1),
