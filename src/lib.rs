@@ -8,22 +8,17 @@ use sdl2::rect::Point;
 
 use image::{RgbImage, Rgb, Pixel};
 
-#[derive(Debug)]
-enum TurtleOp {
-    MoveTo(f32, f32),
-    LineTo(f32, f32),
-    SetColor(u8, u8, u8),
-}
-
-fn d2r(r: f32) -> f32 {
-    r * std::f32::consts::PI / 180.0
-}
-
 pub struct Turtle {
     x: f32,
     y: f32,
     h: f32,
     ops: Vec<TurtleOp>,
+}
+
+enum TurtleOp {
+    MoveTo(f32, f32),
+    LineTo(f32, f32),
+    SetColor(u8, u8, u8),
 }
 
 impl Turtle {
@@ -37,13 +32,14 @@ impl Turtle {
     }
 
     pub fn forward(&mut self, dist: i32) {
+        let d2r = |deg| deg * std::f32::consts::PI / 180.0;
         self.x += (dist as f32) * f32::cos(d2r(self.h));
         self.y += (dist as f32) * f32::sin(d2r(self.h));
         self.ops.push(TurtleOp::LineTo(self.x, self.y));
     }
 
-    pub fn turn(&mut self, amt: f32) {
-        self.h += amt;
+    pub fn turn(&mut self, degrees: f32) {
+        self.h += degrees;
     }
 
     pub fn move_to(&mut self, nx: i32, ny: i32) {
@@ -56,11 +52,11 @@ impl Turtle {
         self.ops.push(TurtleOp::SetColor(r, g, b));
     }
 
-    pub fn get_position(&self) -> (f32, f32) {
+    pub fn position(&self) -> (f32, f32) {
         (self.x, self.y)
     }
 
-    pub fn get_heading(&self) -> f32 {
+    pub fn heading(&self) -> f32 {
         self.h
     }
 
@@ -89,7 +85,7 @@ impl Turtle {
 fn draw_line_img(img: &mut RgbImage, line: Line) {
     let w = img.width();
     let h = img.height();
-    let inbounds = |x: i32, y: i32| x >= 0 && y >= 0 && x < w as i32 && y < h as i32;
+    let inbounds = |x, y| x >= 0 && y >= 0 && x < w as i32 && y < h as i32;
 
     let (x0, y0) = (line.start.0, line.start.1);
     let (x1, y1) = (line.end.0, line.end.1);
@@ -139,14 +135,12 @@ pub struct Line {
     start: (i32, i32),
     end: (i32, i32),
     color: (u8, u8, u8),
-    colorchanged: bool,
 }
 
 impl<'a> Iterator for Lines<'a> {
     type Item = Line;
 
     fn next(&mut self) -> Option<Line> {
-        let mut colorchanged = false;
         loop {
             match self.i.next() {
                 Some(&TurtleOp::MoveTo(tx, ty)) => {
@@ -164,12 +158,10 @@ impl<'a> Iterator for Lines<'a> {
                         start: (lastx, lasty),
                         end: (self.x, self.y),
                         color: self.color,
-                        colorchanged: colorchanged,
                     });
                 }
                 Some(&TurtleOp::SetColor(r, g, b)) => {
                     self.color = (r, g, b);
-                    colorchanged = true;
                 }
                 None => {
                     return None;
@@ -229,7 +221,6 @@ impl<'a> SdlTurtle<'a> {
         let mut renderer = window.renderer().build().unwrap();
         renderer.set_draw_color(Color::RGB(0, 0, 0));
         renderer.clear();
-        renderer.set_draw_color(Color::RGB(255, 255, 255));
 
         let mut paused = false;
         let mut step = false;
@@ -242,15 +233,9 @@ impl<'a> SdlTurtle<'a> {
             if !paused || step {
                 step = false;
                 if let Some(line) = line_iter.next() {
-                    if line.colorchanged {
-                        renderer.set_draw_color(Color::RGB(line.color.0,
-                                                           line.color.1,
-                                                           line.color.2));
-                    }
-
+                    renderer.set_draw_color(Color::RGB(line.color.0, line.color.1, line.color.2));
                     renderer.draw_line(Point::new(line.start.0, line.start.1),
                                        Point::new(line.end.0, line.end.1));
-
                     renderer.present();
                 } else {
                     paused = true;

@@ -32,5 +32,5 @@ fn main() {
     koch(&mut t, n, d);
 
     t.draw_png("snowflake.png", (500, 500));
-    t.draw_sdl().title("Koch snowflake").show();
+    t.draw_sdl().title("Koch snowflake").interactive(false).show();
 }
