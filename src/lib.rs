@@ -1,6 +1,8 @@
 extern crate sdl2;
 extern crate image;
 
+use std::fs::File;
+
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
@@ -69,58 +71,12 @@ impl Turtle {
         }
     }
 
+    pub fn draw_png(&self) -> PngTurtle {
+        PngTurtle::new(&self)
+    }
+
     pub fn draw_sdl(&self) -> SdlTurtle {
         SdlTurtle::new(&self)
-    }
-
-    pub fn draw_png(&self, fname: &str, dims: (u32, u32)) {
-        let mut img = RgbImage::new(dims.0, dims.1);
-        for line in self.lines() {
-            draw_line_img(&mut img, line)
-        }
-        img.save(fname).unwrap();
-    }
-}
-
-fn draw_line_img(img: &mut RgbImage, line: Line) {
-    let w = img.width();
-    let h = img.height();
-    let inbounds = |x, y| x >= 0 && y >= 0 && x < w as i32 && y < h as i32;
-
-    let (x0, y0) = (line.start.0, line.start.1);
-    let (x1, y1) = (line.end.0, line.end.1);
-
-    let dx = i32::abs(x1 - x0);
-    let dy = -i32::abs(y1 - y0);
-    let sx = if x0 < x1 { 1 } else { -1 };
-    let sy = if y0 < y1 { 1 } else { -1 };
-    let mut err = dx + dy;
-
-    let px = Rgb::from_channels(line.color.0, line.color.1, line.color.2, 0);
-
-    let mut x = x0;
-    let mut y = y0;
-
-    loop {
-        if !inbounds(x, y) {
-            break;
-        }
-
-        img.put_pixel(x as u32, y as u32, px);
-
-        if x == x1 && y == y1 {
-            break;
-        }
-
-        let e2 = 2*err;
-        if e2 >= dy {
-            err += dy;
-            x += sx;
-        }
-        if e2 <= dx {
-            err += dx;
-            y += sy;
-        }
     }
 }
 
@@ -171,11 +127,98 @@ impl<'a> Iterator for Lines<'a> {
     }
 }
 
+pub struct PngTurtle<'a> {
+    size: (u32, u32),
+    antialias: bool,
+    bg: (u8, u8, u8),
+    turtle: &'a Turtle,
+}
+
+impl<'a> PngTurtle<'a> {
+    fn new(turtle: &Turtle) -> PngTurtle {
+        PngTurtle {
+            size: (500, 500),
+            antialias: false,
+            bg: (0, 0, 0),
+            turtle: &turtle,
+        }
+    }
+
+    pub fn size(&'a mut self, width: u32, height: u32) -> &mut PngTurtle {
+        self.size = (width, height);
+        self
+    }
+
+    pub fn antialias(&'a mut self, aa: bool) -> &mut PngTurtle {
+        self.antialias = aa;
+        self
+    }
+
+    pub fn background(&'a mut self, r: u8, g: u8, b: u8) -> &mut PngTurtle {
+        self.bg = (r, g, b);
+        self
+    }
+
+    pub fn save(&'a self, fname: &str) {
+        let bgpix = Rgb::from_channels(self.bg.0, self.bg.1, self.bg.2, 0);
+        let mut img = RgbImage::from_pixel(self.size.0, self.size.1, bgpix);
+        for line in self.turtle.lines() {
+            draw_line_img(&mut img, line)
+        }
+
+        let ref mut fout = File::create(fname).unwrap();
+        image::ImageRgb8(img).save(fout, image::PNG).unwrap();
+    }
+}
+
+fn draw_line_img(img: &mut RgbImage, line: Line) {
+    let w = img.width();
+    let h = img.height();
+    let inbounds = |x, y| x >= 0 && y >= 0 && x < w as i32 && y < h as i32;
+
+    let (x0, y0) = (line.start.0, line.start.1);
+    let (x1, y1) = (line.end.0, line.end.1);
+
+    let dx = i32::abs(x1 - x0);
+    let dy = -i32::abs(y1 - y0);
+    let sx = if x0 < x1 { 1 } else { -1 };
+    let sy = if y0 < y1 { 1 } else { -1 };
+    let mut err = dx + dy;
+
+    let px = Rgb::from_channels(line.color.0, line.color.1, line.color.2, 0);
+
+    let mut x = x0;
+    let mut y = y0;
+
+    loop {
+        if !inbounds(x, y) {
+            break;
+        }
+
+        img.put_pixel(x as u32, y as u32, px);
+
+        if x == x1 && y == y1 {
+            break;
+        }
+
+        let e2 = 2*err;
+        if e2 >= dy {
+            err += dy;
+            x += sx;
+        }
+        if e2 <= dx {
+            err += dx;
+            y += sy;
+        }
+    }
+}
+
 pub struct SdlTurtle<'a> {
     title: String,
-    dims: (u32, u32),
+    size: (u32, u32),
     interactive: bool,
     speed: f32,
+    bg: (u8, u8, u8),
     turtle: &'a Turtle,
 }
 
@@ -183,9 +226,10 @@ impl<'a> SdlTurtle<'a> {
     fn new(turtle: &Turtle) -> SdlTurtle {
         SdlTurtle {
             title: "turtle-rs".to_string(),
-            dims: (500, 500),
+            size: (500, 500),
             interactive: true,
             speed: 60.0,
+            bg: (0, 0, 0),
             turtle: turtle,
         }
     }
@@ -196,7 +240,7 @@ impl<'a> SdlTurtle<'a> {
     }
 
     pub fn size(&'a mut self, width: u32, height: u32) -> &mut SdlTurtle {
-        self.dims = (width, height);
+        self.size = (width, height);
         self
     }
 
@@ -210,16 +254,24 @@ impl<'a> SdlTurtle<'a> {
         self
     }
 
+    pub fn background(&'a mut self, r: u8, g: u8, b: u8) -> &mut SdlTurtle {
+        self.bg = (r, g, b);
+        self
+    }
+
     pub fn show(&self) {
         let sdl_context = sdl2::init().unwrap();
         let video_subsystem = sdl_context.video().unwrap();
-        let window = video_subsystem.window(&self.title, self.dims.0, self.dims.1)
+        let window = video_subsystem.window(&self.title, self.size.0, self.size.1)
                                     .position_centered()
                                     .build()
                                     .unwrap();
 
         let mut renderer = window.renderer().build().unwrap();
-        renderer.set_draw_color(Color::RGB(0, 0, 0));
+
+        let bgcolor = Color::RGB(self.bg.0, self.bg.1, self.bg.2);
+
+        renderer.set_draw_color(bgcolor);
         renderer.clear();
 
         let mut paused = false;
@@ -259,9 +311,8 @@ impl<'a> SdlTurtle<'a> {
                             Keycode::R => {
                                 paused = false;
                                 line_iter = self.turtle.lines();
-                                renderer.set_draw_color(Color::RGB(0, 0, 0));
+                                renderer.set_draw_color(bgcolor);
                                 renderer.clear();
-                                renderer.set_draw_color(Color::RGB(255, 255, 255));
                             }
                             Keycode::S => {
                                 step = true;

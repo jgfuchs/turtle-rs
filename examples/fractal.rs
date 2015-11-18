@@ -24,7 +24,6 @@ fn main() {
         }
     }
 
-    t.draw_png("fractal.png", (600, 600));
     t.draw_sdl().title("turtle-rs : Sierpinski").size(600, 600).show();
 }
 
