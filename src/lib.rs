@@ -1,3 +1,17 @@
+//! Simple [turtle graphics](https://en.wikipedia.org/wiki/Turtle_graphics) in Rust. Example:
+//!
+//! ```
+//! let t = Turtle::new();
+//! t.forward(40);
+//! t.turn(60.0);
+//! t.set_color(255, 64, 0);
+//! t.forward(70);
+//! t.draw_png().save("bent_line.png");
+//! ```
+//!
+//! See the [examples](https://github.com/jgfuchs/turtle-rs/tree/master/examples) for more
+//! complicated usage.
+
 extern crate sdl2;
 extern crate image;
 
@@ -10,6 +24,7 @@ use sdl2::rect::Point;
 
 use image::{RgbImage, Rgb, Pixel};
 
+/// A drawing turtle
 pub struct Turtle {
     x: f32,
     y: f32,
@@ -24,6 +39,7 @@ enum TurtleOp {
 }
 
 impl Turtle {
+    /// Create a new turtle at the origin
     pub fn new() -> Turtle {
         Turtle {
             x: 0.0,
@@ -33,6 +49,7 @@ impl Turtle {
         }
     }
 
+    /// Move forward, drawing a line (backwards if dist < 0)
     pub fn forward(&mut self, dist: i32) {
         let d2r = |deg| deg * std::f32::consts::PI / 180.0;
         self.x += (dist as f32) * f32::cos(d2r(self.h));
@@ -40,28 +57,34 @@ impl Turtle {
         self.ops.push(TurtleOp::LineTo(self.x, self.y));
     }
 
+    /// Turn right, or counter-clockwise (left if degrees < 0)
     pub fn turn(&mut self, degrees: f32) {
         self.h += degrees;
     }
 
+    /// Jump to a new location without drawing a line
     pub fn move_to(&mut self, nx: i32, ny: i32) {
         self.x = nx as f32;
         self.y = ny as f32;
         self.ops.push(TurtleOp::MoveTo(self.x, self.y));
     }
 
+    /// Set the color to use for future lines
     pub fn set_color(&mut self, r: u8, g: u8, b: u8) {
         self.ops.push(TurtleOp::SetColor(r, g, b));
     }
 
+    /// Get the current position
     pub fn position(&self) -> (f32, f32) {
         (self.x, self.y)
     }
 
+    /// Get the current heading; 0&deg; when facing directly to the right
     pub fn heading(&self) -> f32 {
         self.h
     }
 
+    /// Get an iterator over the lines that this turtle has walked so far
     pub fn lines(&self) -> Lines {
         Lines {
             i: self.ops.iter(),
@@ -71,15 +94,18 @@ impl Turtle {
         }
     }
 
+    /// Get a builder for rendering to a PNG
     pub fn draw_png(&self) -> PngTurtle {
         PngTurtle::new(&self)
     }
 
+    /// Get a builder for displaying with SDL
     pub fn draw_sdl(&self) -> SdlTurtle {
         SdlTurtle::new(&self)
     }
 }
 
+/// Iterator over the lines walked by a Turtle
 pub struct Lines<'a> {
     i: std::slice::Iter<'a, TurtleOp>,
     x: i32,
@@ -87,10 +113,11 @@ pub struct Lines<'a> {
     color: (u8, u8, u8),
 }
 
+/// A line, with associated color
 pub struct Line {
-    start: (i32, i32),
-    end: (i32, i32),
-    color: (u8, u8, u8),
+    pub start: (i32, i32),
+    pub end: (i32, i32),
+    pub color: (u8, u8, u8),
 }
 
 impl<'a> Iterator for Lines<'a> {
@@ -127,9 +154,10 @@ impl<'a> Iterator for Lines<'a> {
     }
 }
 
+/// Builder object for rendering to a PNG
 pub struct PngTurtle<'a> {
     size: (u32, u32),
-    antialias: bool,
+    antialias: bool,    // TODO: implement anti-aliased line drawing
     bg: (u8, u8, u8),
     turtle: &'a Turtle,
 }
@@ -144,21 +172,25 @@ impl<'a> PngTurtle<'a> {
         }
     }
 
+    /// Set the size in pixels of the image to be written (default: 500x500)
     pub fn size(&'a mut self, width: u32, height: u32) -> &mut PngTurtle {
         self.size = (width, height);
         self
     }
 
+    /// Set whether to draw with anti-alising (default: false)
     pub fn antialias(&'a mut self, aa: bool) -> &mut PngTurtle {
         self.antialias = aa;
         self
     }
 
+    /// Set the image's background color (default: #000)
     pub fn background(&'a mut self, r: u8, g: u8, b: u8) -> &mut PngTurtle {
         self.bg = (r, g, b);
         self
     }
 
+    /// Save the image as PNG with the given filename
     pub fn save(&'a self, fname: &str) {
         let bgpix = Rgb::from_channels(self.bg.0, self.bg.1, self.bg.2, 0);
         let mut img = RgbImage::from_pixel(self.size.0, self.size.1, bgpix);
@@ -213,6 +245,16 @@ fn draw_line_img(img: &mut RgbImage, line: Line) {
     }
 }
 
+/// Builder for displaying with SDL
+///
+/// Creates a window and displays an animated form of the turtle's path. If running in interactive
+/// mode, then the following keyboard commands can be used:
+///
+/// + **space** : pause and unpause the animation
+/// + **s** : when paused, step through the lines one at a time
+/// + **r** : clear the window and reset to the beginning of the path
+/// + **[** : decrease animation speed
+/// + **]** : increase animation speed
 pub struct SdlTurtle<'a> {
     title: String,
     size: (u32, u32),
@@ -234,31 +276,37 @@ impl<'a> SdlTurtle<'a> {
         }
     }
 
+    /// Set the window's title (default: "turtle-rs")
     pub fn title(&'a mut self, new_title: &str) -> &mut SdlTurtle {
         self.title = new_title.to_string();
         self
     }
 
+    /// Set the window's size in pixels (default: 500x500)
     pub fn size(&'a mut self, width: u32, height: u32) -> &mut SdlTurtle {
         self.size = (width, height);
         self
     }
 
+    /// Set whether the window is interactive (default: true)
     pub fn interactive(&'a mut self, inter: bool) -> &mut SdlTurtle {
         self.interactive = inter;
         self
     }
 
+    /// Set the step speed, which is roughly equivalent to FPS (default: 60.0)
     pub fn speed(&'a mut self, new_speed: f32) -> &mut SdlTurtle {
         self.speed = new_speed;
         self
     }
 
+    /// Set the background color (default: #000)
     pub fn background(&'a mut self, r: u8, g: u8, b: u8) -> &mut SdlTurtle {
         self.bg = (r, g, b);
         self
     }
 
+    /// Create an SDL window and begin running through the turtle's drawing
     pub fn show(&self) {
         let sdl_context = sdl2::init().unwrap();
         let video_subsystem = sdl_context.video().unwrap();
