@@ -16,6 +16,7 @@ extern crate sdl2;
 extern crate image;
 
 use std::fs::File;
+use std::time::Duration;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -325,7 +326,7 @@ impl<'a> SdlTurtle<'a> {
         let mut paused = false;
         let mut step = false;
         let mut line_iter = self.turtle.lines();
-        let mut delay = (1000.0 / self.speed) as u32;
+        let mut delay = (1000.0 / self.speed) as u64;
 
         let mut event_pump = sdl_context.event_pump().unwrap();
 
@@ -335,7 +336,7 @@ impl<'a> SdlTurtle<'a> {
                 if let Some(line) = line_iter.next() {
                     renderer.set_draw_color(Color::RGB(line.color.0, line.color.1, line.color.2));
                     renderer.draw_line(Point::new(line.start.0, line.start.1),
-                                       Point::new(line.end.0, line.end.1));
+                                       Point::new(line.end.0, line.end.1)).unwrap();
                     renderer.present();
                 } else {
                     paused = true;
@@ -380,7 +381,7 @@ impl<'a> SdlTurtle<'a> {
                 }
             }
 
-            std::thread::sleep_ms(delay);
+            std::thread::sleep(Duration::from_millis(delay));
         }
     }
 }

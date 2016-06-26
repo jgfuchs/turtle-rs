@@ -8,5 +8,5 @@ name = "turtle"
 path = "src/lib.rs"
 
 [dependencies]
-sdl2 = "0.10.0"
-image = "0.5.1"
+sdl2 = "0.15.0"
+image = "0.6.1"
