@@ -52,9 +52,9 @@ impl Turtle {
 
     /// Move forward, drawing a line (backwards if dist < 0)
     pub fn forward(&mut self, dist: i32) {
-        let d2r = |deg| deg * std::f32::consts::PI / 180.0;
-        self.x += (dist as f32) * f32::cos(d2r(self.h));
-        self.y += (dist as f32) * f32::sin(d2r(self.h));
+        let h_rad = self.h.to_radians();
+        self.x += (dist as f32) * f32::cos(h_rad);
+        self.y += (dist as f32) * f32::sin(h_rad);
         self.ops.push(TurtleOp::LineTo(self.x, self.y));
     }
 
