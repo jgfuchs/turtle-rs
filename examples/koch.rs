@@ -31,5 +31,5 @@ fn main() {
     t.turn(120.0);
     koch(&mut t, n, d);
 
-    t.draw_png().background(60, 60, 60).save("snowflake.png");
+    t.draw_png().background(30, 30, 30).save("snowflake.png");
 }

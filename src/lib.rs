@@ -174,19 +174,19 @@ impl<'a> PngTurtle<'a> {
     }
 
     /// Set the size in pixels of the image to be written (default: 500x500)
-    pub fn size(&'a mut self, width: u32, height: u32) -> &mut PngTurtle {
+    pub fn size(mut self, width: u32, height: u32) -> PngTurtle<'a> {
         self.size = (width, height);
         self
     }
 
     /// Set whether to draw with anti-alising (default: false)
-    pub fn antialias(&'a mut self, aa: bool) -> &mut PngTurtle {
+    pub fn antialias(mut self, aa: bool) -> PngTurtle<'a> {
         self.antialias = aa;
         self
     }
 
     /// Set the image's background color (default: #000)
-    pub fn background(&'a mut self, r: u8, g: u8, b: u8) -> &mut PngTurtle {
+    pub fn background(mut self, r: u8, g: u8, b: u8) -> PngTurtle<'a> {
         self.bg = (r, g, b);
         self
     }
@@ -278,31 +278,31 @@ impl<'a> SdlTurtle<'a> {
     }
 
     /// Set the window's title (default: "turtle-rs")
-    pub fn title(&'a mut self, new_title: &str) -> &mut SdlTurtle {
+    pub fn title(mut self, new_title: &str) -> SdlTurtle<'a> {
         self.title = new_title.to_string();
         self
     }
 
     /// Set the window's size in pixels (default: 500x500)
-    pub fn size(&'a mut self, width: u32, height: u32) -> &mut SdlTurtle {
+    pub fn size(mut self, width: u32, height: u32) -> SdlTurtle<'a> {
         self.size = (width, height);
         self
     }
 
     /// Set whether the window is interactive (default: true)
-    pub fn interactive(&'a mut self, inter: bool) -> &mut SdlTurtle {
+    pub fn interactive(mut self, inter: bool) -> SdlTurtle<'a> {
         self.interactive = inter;
         self
     }
 
     /// Set the step speed, which is roughly equivalent to FPS (default: 60.0)
-    pub fn speed(&'a mut self, new_speed: f32) -> &mut SdlTurtle {
+    pub fn speed(mut self, new_speed: f32) -> SdlTurtle<'a> {
         self.speed = new_speed;
         self
     }
 
     /// Set the background color (default: #000)
-    pub fn background(&'a mut self, r: u8, g: u8, b: u8) -> &mut SdlTurtle {
+    pub fn background(mut self, r: u8, g: u8, b: u8) -> SdlTurtle<'a> {
         self.bg = (r, g, b);
         self
     }
